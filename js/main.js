@@ -3,7 +3,8 @@ const yearFormatter = d3.timeFormat("%Y");
 const yearParser = d3.timeParse("%Y");
 
 // Global visualization instances
-let worldMap, timeline, scatterplot;
+let worldMap, timeline, scatterplot, barChart, radarChart;
+let scatterplotInitialized = false; // Flag to track scatterplot initialization
 
 // (1) Load data with promises
 let promises = [
@@ -12,8 +13,47 @@ let promises = [
 
 Promise.all(promises)
     .then(function (data) {
-        console.log("Raw data loaded:", data);
         createVis(data)
+        let rankingData = data[0];
+
+        // Log the entire data set to check for 2024 entries
+        console.log("Loaded ranking data:", rankingData);
+
+        rankingData = rankingData.map(d => ({
+            rank_order: +d.rank_order || 0,
+            name: d.name,
+            location: d.location,
+            year: +d.year || 0,
+            scores_overall: +d.scores_overall || 0,
+            scores_teaching: +d.scores_teaching || 0,
+            scores_international_outlook: +d.scores_international_outlook || 0,
+            scores_industry_income: +d.scores_industry_income || 0,
+            scores_research: +d.scores_research || 0,
+            scores_citations: +d.scores_citations || 0
+        }));
+
+        // Log the filtered data for 2024
+        const universities2024 = rankingData.filter(d => d.year === 2024);
+        console.log("Filtered universities for 2024:", universities2024);
+
+        // Check specifically for Canada
+        const universitiesCanada = universities2024.filter(d => d.location === "Canada");
+        console.log("Universities in Canada for 2024:", universitiesCanada);
+
+        // Initialize visualization instances
+        worldMap = new WorldMap("worldmap-chart", rankingData);
+        barChart = new BarChart("bar-chart-canvas", rankingData);
+        radarChart = new RadarChart("radar-chart-canvas", rankingData);
+        timeline = new Timeline("timeline-chart", rankingData);
+        
+        // Initialize scatterplot only if it hasn't been initialized
+        if (!scatterplotInitialized) {
+            scatterplot = new Scatterplot("scatterplot-chart", rankingData);
+            scatterplotInitialized = true; // Set the flag to true after initialization
+        }
+
+        barChart.updateChart();
+        radarChart.updateChart();
     })
     .catch(function (err) {
         console.error("Error loading data:", err)
@@ -173,6 +213,8 @@ function setupIntersectionObserver() {
 
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
+            console.log(`Page ${entry.target.id} intersection:`, entry.isIntersecting);
+            
             if (entry.target.id === 'page2') {
                 const imageContainer = document.querySelector('.intro-image-container');
                 const textContainer = document.querySelector('.intro-text-container');
@@ -214,17 +256,20 @@ function setupIntersectionObserver() {
                 }
             }
             
-            if (entry.isIntersecting) {
-                console.log("16. Page intersecting:", entry.target.id);
-                if (entry.target.id === 'page6' && scatterplot) {
-                    console.log("17. Triggering scatterplot render");
-                    scatterplot.render();
+            if (entry.target.id === 'page6') {
+                if (entry.isIntersecting) {
+                    console.log("Rendering scatterplot");
+                    if (scatterplot) {
+                        scatterplot.render();
+                    } else {
+                        console.error("Scatterplot instance not found");
+                    }
                 }
             }
         });
     }, options);
 
-    // Start observing all pages
+    // 确保观察所有页面
     document.querySelectorAll('.page').forEach(page => {
         observer.observe(page);
     });
@@ -243,4 +288,14 @@ window.addEventListener('resize', () => {
     if (worldMap) worldMap.render();
     if (timeline) timeline.render();
     if (scatterplot) scatterplot.render();
+});
+
+// Add event listener for university selection
+document.addEventListener("universitySelected", (event) => {
+    console.log('Main: University selected:', event.detail); // Log the selected university data
+    if (event.detail && event.detail.scores_overall > 0) {
+        radarChart.updateChart(event.detail);
+    } else {
+        console.warn('Main: No valid university data provided for radar chart update.');
+    }
 });
