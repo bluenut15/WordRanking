@@ -131,5 +131,35 @@
     <script src="js/radar.js"></script>
     <script src="js/barchart.js"></script>
     <script src="js/main.js"></script>
+
+    <script>
+        // Debug page6 container
+        document.addEventListener('DOMContentLoaded', function() {
+            const page6 = document.getElementById('page6');
+            const scatterplotChart = document.getElementById('scatterplot-chart');
+            
+            console.log("Page Debug: Page 6 container:", {
+                element: page6,
+                dimensions: {
+                    clientWidth: page6?.clientWidth,
+                    clientHeight: page6?.clientHeight,
+                    offsetWidth: page6?.offsetWidth,
+                    offsetHeight: page6?.offsetHeight,
+                    style: page6?.style?.cssText
+                }
+            });
+            
+            console.log("Page Debug: Scatterplot chart container:", {
+                element: scatterplotChart,
+                dimensions: {
+                    clientWidth: scatterplotChart?.clientWidth,
+                    clientHeight: scatterplotChart?.clientHeight,
+                    offsetWidth: scatterplotChart?.offsetWidth,
+                    offsetHeight: scatterplotChart?.offsetHeight,
+                    style: scatterplotChart?.style?.cssText
+                }
+            });
+        });
+    </script>
 </body>
 </html> 
