@@ -1746,3 +1746,32 @@ canvas {
     width: 100%;
     height: 100%;
 }
+
+.hexagon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.variable-line {
+    cursor: pointer;
+}
+
+.variable-line:hover {
+    stroke: #3498db;
+    opacity: 0.8;
+}
+
+.variable-label {
+    font-size: 12px;
+}
+
+.slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.slider-container input[type="range"] {
+    width: 100%;
+}
