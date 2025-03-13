@@ -86,6 +86,7 @@ class Scatterplot {
         // Add single title for both metrics and year selection
         leftPanel.append("h2")
             .attr("class", "hexagon-title")
+            .style("opacity", "0")  // Start hidden
             .text("Select Metrics and Year");
 
         // Add hexagon container
@@ -188,9 +189,9 @@ class Scatterplot {
         vis.textGroup = vis.hexagonSvg.append("g").attr("class", "text-group");
 
         // Calculate hexagon layout
-        const radius = 100;
+        const radius = 120;
         const center = { x: 150, y: 150 };
-        const circleRadius = 35;  // Increased circle radius further
+        const circleRadius = 40;  // Increased circle radius further
         
         // Calculate vertex positions (starting from top, clockwise)
         vis.vertices = vis.variables.map((_, i) => {

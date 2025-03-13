@@ -257,13 +257,21 @@ function setupIntersectionObserver() {
             }
             
             if (entry.target.id === 'page6') {
-                if (entry.isIntersecting) {
-                    console.log("Rendering scatterplot");
-                    if (scatterplot) {
-                        scatterplot.render();
-                    } else {
-                        console.error("Scatterplot instance not found");
-                    }
+                const page6 = document.getElementById('page6');
+                
+            if (entry.isIntersecting) {
+                    // Add visible class to trigger fade-in animations
+                    page6.classList.add('visible');
+                    
+                    // Stagger the animations
+                    setTimeout(() => {
+                        if (scatterplot) {
+                            scatterplot.render();
+                        }
+                    }, 400); // Delay render slightly to allow initial fade in
+                } else {
+                    // Remove visible class to trigger fade-out animations
+                    page6.classList.remove('visible');
                 }
             }
         });
