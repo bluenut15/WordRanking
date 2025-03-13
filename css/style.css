@@ -665,8 +665,6 @@ html, body {
     position: relative;
     height: 100vh;
     padding: 0 20px;
-    display: flex;
-    flex-direction: column;
 }
 
 #page4 .main-title {
@@ -683,11 +681,10 @@ html, body {
 
 /* Map and charts grid layout */
 #page4 .map-charts-grid {
+    padding-top: 20px;  /* 减少顶部间距 */
+    height: calc(100vh - 100px);
     display: flex;
-    width: 100%;
-    height: calc(100vh - 40px);  /* 进一步减少高度 */
     gap: 20px;
-    margin-top: -40px;  /* 增加负边距使内容更往上移 */
 }
 
 /* Left side - World Map */
@@ -731,6 +728,12 @@ canvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    opacity: 0;  /* Start hidden */
+    transition: opacity 0.8s ease-in-out;
+}
+
+#page6.visible .content-wrapper {
+    opacity: 1;
 }
 
 #scatterplot-chart {
@@ -743,6 +746,153 @@ canvas {
 #scatterplot-chart svg {
     width: 100%;
     height: 100%;
+}
+
+.hexagon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.variable-line {
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.variable-line:hover {
+    stroke: #3498db;
+    opacity: 0.8;
+}
+
+.variable-label {
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.slider-container input[type="range"] {
+    width: 100%;
+}
+
+/* Update scatterplot title styles */
+.plot-title {
+    font-size: 32px;  /* Increased from 24px to 32px */
+    font-weight: bold;
+    fill: #4a4a4a;  /* Dark grey color */
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* Left panel title styles */
+.hexagon-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 15px;  /* Reduced from 20px to 15px to bring hexagon closer */
+    text-align: center;   /* Center the title */
+    width: 100%;         /* Ensure full width for centering */
+    opacity: 0;  /* Start hidden */
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* Slider title styles */
+.slider-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* Left panel and slider styles */
+.hexagon-title, .slider-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 20px;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.slider-title {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Scatterplot styles */
+.plot-title {
+    font-size: 28px;
+    font-weight: bold;
+    fill: #4a4a4a;
+}
+
+.hexagon-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    width: 300px;  /* Fixed width */
+    height: auto;  /* Dynamic height */
+    max-width: 300px;  /* Ensure consistent width */
+}
+
+.hexagon-tooltip .metric-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4a4a4a;
+    margin-bottom: 8px;  /* Add more space between title and description */
+    line-height: 1.2;  /* Improve readability */
+}
+
+.hexagon-tooltip .metric-description {
+    font-size: 12px;
+    color: #4a4a4a;
+    line-height: 1.4;  /* Improve readability for longer text */
+    word-wrap: break-word;  /* Ensure long words don't overflow */
+}
+
+/* Add transition properties to all elements in the scatterplot */
+.hexagon-container,
+.slider-container,
+.plot-container,
+.variable-line,
+.variable-circle,
+.variable-label,
+.x-axis,
+.y-axis,
+.plot-title {
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* When parent is visible, show all children with staggered delays */
+#page6.visible .hexagon-container,
+#page6.visible .slider-container,
+#page6.visible .plot-container,
+#page6.visible .variable-line,
+#page6.visible .variable-circle,
+#page6.visible .variable-label,
+#page6.visible .x-axis,
+#page6.visible .y-axis,
+#page6.visible .plot-title {
+    opacity: 1;
 }
 
 .page {
@@ -1737,7 +1887,7 @@ canvas {
 
 #scatterplot-chart {
     width: 100%;
-    height: 90vh;  /* 给图表足够的高度 */
+    height: 90vh;
     position: relative;
 }
 
@@ -1745,4 +1895,154 @@ canvas {
 #scatterplot-chart svg {
     width: 100%;
     height: 100%;
+}
+
+.hexagon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.variable-line {
+    cursor: pointer;
+}
+
+.variable-line:hover {
+    stroke: #3498db;
+    opacity: 0.8;
+}
+
+.variable-label {
+    font-size: 12px;
+}
+
+.slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.slider-container input[type="range"] {
+    width: 100%;
+}
+
+/* Update scatterplot title styles */
+.plot-title {
+    font-size: 32px;  /* Increased from 24px to 32px */
+    font-weight: bold;
+    fill: #4a4a4a;  /* Dark grey color */
+}
+
+/* Left panel title styles */
+.hexagon-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 15px;  /* Reduced from 20px to 15px to bring hexagon closer */
+    text-align: center;   /* Center the title */
+    width: 100%;         /* Ensure full width for centering */
+    opacity: 0;  /* Start hidden */
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* Slider title styles */
+.slider-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Left panel and slider styles */
+.hexagon-title, .slider-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.slider-title {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Scatterplot styles */
+.plot-title {
+    font-size: 28px;
+    font-weight: bold;
+    fill: #4a4a4a;
+}
+
+.hexagon-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    width: 300px;  /* Fixed width */
+    height: auto;  /* Dynamic height */
+    max-width: 300px;  /* Ensure consistent width */
+}
+
+.hexagon-tooltip .metric-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4a4a4a;
+    margin-bottom: 8px;  /* Add more space between title and description */
+    line-height: 1.2;  /* Improve readability */
+}
+
+.hexagon-tooltip .metric-description {
+    font-size: 12px;
+    color: #4a4a4a;
+    line-height: 1.4;  /* Improve readability for longer text */
+    word-wrap: break-word;  /* Ensure long words don't overflow */
+}
+
+/* Add transition properties to all elements in the scatterplot */
+.hexagon-container,
+.slider-container,
+.plot-container,
+.variable-line,
+.variable-circle,
+.variable-label,
+.x-axis,
+.y-axis,
+.plot-title {
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* When parent is visible, show all children with staggered delays */
+#page6.visible .hexagon-container,
+#page6.visible .slider-container,
+#page6.visible .plot-container,
+#page6.visible .variable-line,
+#page6.visible .variable-circle,
+#page6.visible .variable-label,
+#page6.visible .x-axis,
+#page6.visible .y-axis,
+#page6.visible .plot-title {
+    opacity: 1;
+}
+
+/* Add transition for the hexagon title */
+.hexagon-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+    width: 100%;
+    opacity: 0;  /* Start hidden */
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* Make the title visible when page6 is visible */
+#page6.visible .hexagon-title {
+    opacity: 1;
 }
