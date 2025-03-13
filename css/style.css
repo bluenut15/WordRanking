@@ -1737,7 +1737,7 @@ canvas {
 
 #scatterplot-chart {
     width: 100%;
-    height: 90vh;  /* 给图表足够的高度 */
+    height: 90vh;
     position: relative;
 }
 
@@ -1774,4 +1774,79 @@ canvas {
 
 .slider-container input[type="range"] {
     width: 100%;
+}
+
+/* Update scatterplot title styles */
+.plot-title {
+    font-size: 32px;  /* Increased from 24px to 32px */
+    font-weight: bold;
+    fill: #4a4a4a;  /* Dark grey color */
+}
+
+/* Left panel title styles */
+.hexagon-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 15px;  /* Reduced from 20px to 15px to bring hexagon closer */
+    text-align: center;   /* Center the title */
+    width: 100%;         /* Ensure full width for centering */
+}
+
+/* Slider title styles */
+.slider-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Left panel and slider styles */
+.hexagon-title, .slider-title {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.slider-title {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Scatterplot styles */
+.plot-title {
+    font-size: 28px;
+    font-weight: bold;
+    fill: #4a4a4a;
+}
+
+.hexagon-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    width: 300px;  /* Fixed width */
+    height: auto;  /* Dynamic height */
+    max-width: 300px;  /* Ensure consistent width */
+}
+
+.hexagon-tooltip .metric-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4a4a4a;
+    margin-bottom: 8px;  /* Add more space between title and description */
+    line-height: 1.2;  /* Improve readability */
+}
+
+.hexagon-tooltip .metric-description {
+    font-size: 12px;
+    color: #4a4a4a;
+    line-height: 1.4;  /* Improve readability for longer text */
+    word-wrap: break-word;  /* Ensure long words don't overflow */
 }

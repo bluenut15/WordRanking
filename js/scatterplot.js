@@ -55,16 +55,15 @@ class Scatterplot {
 
     initVis() {
         const vis = this;
-        console.log("Scatterplot Debug: Starting initVis");
 
         // Clear any existing content
         const containerElement = document.getElementById(vis.containerId);
         containerElement.innerHTML = '';
         
-        // Create main container with two-panel layout
+        // Create main container with equal-width panels
         const container = d3.select("#" + vis.containerId)
             .style("display", "grid")
-            .style("grid-template-columns", "40% 60%")  // 40% left, 60% right
+            .style("grid-template-columns", "42% 58%") 
             .style("width", "100%")
             .style("height", "100vh")
             .style("gap", "20px")
@@ -81,10 +80,15 @@ class Scatterplot {
 
         // Calculate heights for hexagon container (70% of its previous height)
         const totalHeight = containerElement.clientHeight;
-        const hexagonHeight = Math.floor(totalHeight * 0.7 * 0.7); // 70% of previous 100%
+        const hexagonHeight = Math.floor(totalHeight * 0.6); // 60% of 100%
         const sliderHeight = 100; // Fixed height for slider
 
-        // Hexagon container (top of left panel)
+        // Add single title for both metrics and year selection
+        leftPanel.append("h2")
+            .attr("class", "hexagon-title")
+            .text("Select Metrics and Year");
+
+        // Add hexagon container
         vis.hexagonContainer = leftPanel.append("div")
             .attr("class", "hexagon-container")
             .style("height", `${hexagonHeight}px`)  // Set specific height
@@ -94,7 +98,7 @@ class Scatterplot {
 
         console.log("Scatterplot Debug: Hexagon container created");
 
-        // Slider container (bottom of left panel)
+        // Remove the separate slider title and just add the slider container
         vis.sliderContainer = leftPanel.append("div")
             .attr("class", "slider-container")
             .style("height", `${sliderHeight}px`)
@@ -103,13 +107,21 @@ class Scatterplot {
             .style("flex-direction", "column")
             .style("justify-content", "center");
 
-        console.log("Scatterplot Debug: Slider container created");
+        // Add new debug logs for slider title
+        console.log("Scatterplot Debug - Slider Container:", vis.sliderContainer);
+        console.log("Scatterplot Debug - Attempting to add slider title");
 
-        // Right panel for plot
+        // Verify the title was added
+        console.log("Scatterplot Debug - Slider title elements:", vis.sliderContainer.selectAll(".slider-title").nodes());
+
+        // Right panel for plot - now with centering
         vis.plotContainer = container.append("div")
             .attr("class", "plot-container")
             .style("width", "100%")
-            .style("height", "100%");
+            .style("height", "100%")
+            .style("display", "flex")
+            .style("justify-content", "center")  // Center horizontally
+            .style("align-items", "center");     // Center vertically
 
         console.log("Scatterplot Debug: Plot container created");
 
@@ -167,12 +179,18 @@ class Scatterplot {
             .attr("width", "100%")
             .attr("height", "100%")
             .attr("viewBox", "0 0 300 300")
-            .style("max-height", "100%")  // Ensure it fits in container
+            .style("max-height", "100%")
             .style("overflow", "visible");
+
+        // Create separate groups for each layer
+        vis.linesGroup = vis.hexagonSvg.append("g").attr("class", "lines-group");
+        vis.circlesGroup = vis.hexagonSvg.append("g").attr("class", "circles-group");
+        vis.textGroup = vis.hexagonSvg.append("g").attr("class", "text-group");
 
         // Calculate hexagon layout
         const radius = 100;
         const center = { x: 150, y: 150 };
+        const circleRadius = 35;  // Increased circle radius further
         
         // Calculate vertex positions (starting from top, clockwise)
         vis.vertices = vis.variables.map((_, i) => {
@@ -195,8 +213,8 @@ class Scatterplot {
             }
         }
 
-        // Draw lines
-        vis.hexagonSvg.selectAll(".variable-line")
+        // Draw lines in the bottom layer
+        vis.linesGroup.selectAll(".variable-line")
             .data(vis.lines)
             .join("line")
             .attr("class", "variable-line")
@@ -205,95 +223,208 @@ class Scatterplot {
             .attr("x2", d => d.target.x)
             .attr("y2", d => d.target.y)
             .style("stroke", "#cccccc")
-            .style("stroke-width", 2)
+            .style("stroke-width", 5)
             .style("opacity", 0.5)
             .on("click", function(event, d) {
                 vis.selectVariables(d.variables);
             });
 
-        // Draw vertices
-        vis.hexagonSvg.selectAll(".variable-circle")
+        // Define colors
+        vis.colors = {
+            circleFillDefault: "#add8e6",    // Light blue
+            circleFillHighlight: "#3498db",  // Darker blue
+            textDefault: "#4a4a4a",          // Dark grey
+            textHighlight: "#ffffff"         // White
+        };
+
+        // Draw circles in the middle layer
+        vis.circlesGroup.selectAll(".variable-circle")
             .data(vis.vertices)
             .join("circle")
             .attr("class", "variable-circle")
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)
-            .attr("r", 10)
-            .style("fill", "#add8e6")
-            .style("stroke", "#666");
+            .attr("r", circleRadius)
+            .style("fill", vis.colors.circleFillDefault)
+            .style("stroke", "none")
+            .style("cursor", "pointer");
+
+        // Create text groups in the top layer
+        const textGroups = vis.textGroup.selectAll(".variable-text-group")
+            .data(vis.variables)
+            .join("g")
+            .attr("class", "variable-text-group")
+            .attr("transform", (d, i) => `translate(${vis.vertices[i].x},${vis.vertices[i].y})`);
 
         // Add labels
-        vis.hexagonSvg.selectAll(".variable-label")
-            .data(vis.variables)
-            .join("text")
-            .attr("class", "variable-label")
-            .attr("x", (d, i) => vis.vertices[i].x)
-            .attr("y", (d, i) => vis.vertices[i].y + 20)
-            .attr("text-anchor", "middle")
-            .text(d => d.label);
+        textGroups.each(function(d, i) {
+            const group = d3.select(this);
+            
+            const words = d.label
+                .replace(" Score", "")
+                .split(" ")
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1));
+            
+            const lineHeight = 1.2;
+            
+            words.forEach((word, j) => {
+                group.append("text")
+                    .attr("class", "variable-label")
+                    .attr("x", 0)
+                    .attr("y", (j - (words.length - 1)/2) * (lineHeight * 12))
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", vis.colors.textDefault)
+                    .style("pointer-events", "none")
+                    .text(word);
+            });
+        });
 
-        // Highlight default selection
+        // Add tooltip div if it doesn't exist
+        vis.tooltip = d3.select("body").append("div")
+            .attr("class", "hexagon-tooltip")
+            .style("opacity", 0);
+
+        // Updated format metric name function
+        function formatMetricName(name) {
+            return name
+                .replace('scores_', '')  // Remove 'scores_' prefix
+                .replace('score_', '')   // Remove 'score_' prefix
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ') + ' Score';  // Add 'Score' as suffix
+        }
+
+        // Store metric data with both position and name
+        vis.metricData = vis.variables.map((metric, i) => ({
+            name: metric.name,
+            x: vis.vertices[i].x,
+            y: vis.vertices[i].y
+        }));
+
+        // Add metric descriptions
+        vis.metricDescriptions = {
+            'scores_overall': 'A comprehensive measurement of the overall performance and quality of the university.',
+            'scores_teaching': 'A comprehensive measurement of the learning environment of the university. Aspects considered include teaching reputation, staff-to-student ratio, attractiveness to graduates, teaching effectiveness, and institutional income.',
+            'scores_research': 'A comprehensive measurement of the research environment of the university. Aspects considered include research reputation, income, and productivity.',
+            'scores_citations': 'A comprehensive measurement of the research quality of the university. Aspects considered include research impact, strength, and excellence.',
+            'scores_international_outlook': 'A comprehensive measurement of the ability of a university to attract people from all over the world. Aspects considered include proportion of international staff and students, as well as international collaboration.',
+            'scores_industry_income': 'A comprehensive measurement of the ability of a university to help with industrial development. Aspects considered include how much research income it earns from industry and the extent to which businesses are willing to pay for its research.'
+        };
+
+        // Update circle creation to use the new data structure
+        vis.circlesGroup.selectAll(".variable-circle")
+            .data(vis.metricData)  // Use the new data structure
+            .join("circle")
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("r", circleRadius)
+            .style("fill", vis.colors.circleFillDefault)
+            .style("stroke", "none")
+            .style("cursor", "pointer")
+            .on("mouseover", function(event, d) {
+                const formattedName = formatMetricName(d.name);
+                
+                vis.tooltip
+                    .style("opacity", 1)
+                    .html(`<div class="metric-name">${formattedName}</div>
+                          <div class="metric-description">${vis.metricDescriptions[d.name]}</div>`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 10) + "px");
+            })
+            .on("mousemove", function(event) {
+                vis.tooltip
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 10) + "px");
+            })
+            .on("mouseout", function() {
+                vis.tooltip.style("opacity", 0);
+            });
+
         this.updateHexagonSelection();
     }
 
     initPlot() {
         const vis = this;
-        console.log("Scatterplot Debug: InitPlot start");
+        console.log("Scatterplot Debug: Starting initPlot");
         
-        // Set up margins and dimensions
-        vis.margin = { top: 40, right: 20, bottom: 40, left: 60 };
-        vis.width = vis.plotContainer.node().clientWidth - vis.margin.left - vis.margin.right;
-        vis.height = vis.plotContainer.node().clientHeight - vis.margin.top - vis.margin.bottom;
+        // Define colors
+        vis.plotColors = {
+            darkGrey: "#4a4a4a"  // Dark grey color for text and axes
+        };
+
+        // Get container dimensions
+        const containerWidth = vis.plotContainer.node().clientWidth;
+        const containerHeight = vis.plotContainer.node().clientHeight;
         
+        // Calculate size for square plot (use smaller dimension)
+        const size = Math.min(containerWidth, containerHeight) * 0.8; // 80% of smaller dimension
+        
+        // Update margins to move everything down
+        vis.margin = {
+            top: 100,  // Increased from 70 to 100 to move everything down 30 units
+            right: 40,
+            bottom: 50,
+            left: 125
+        };
+
+        // Set width and height to be equal
+        vis.width = size - vis.margin.left - vis.margin.right;
+        vis.height = vis.width; // Make it square
+
         console.log("Scatterplot Debug: Plot dimensions:", {
+            containerWidth,
+            containerHeight,
+            plotSize: size,
             width: vis.width,
-            height: vis.height,
-            margins: vis.margin
+            height: vis.height
         });
 
-        // Create SVG
+        // Create SVG with square dimensions
         vis.svg = vis.plotContainer.append("svg")
             .attr("width", vis.width + vis.margin.left + vis.margin.right)
             .attr("height", vis.height + vis.margin.top + vis.margin.bottom)
+            .style("display", "block")  // Removes any extra space
+            .style("margin", "auto")    // Centers the SVG
             .append("g")
             .attr("transform", `translate(${vis.margin.left},${vis.margin.top})`);
 
         console.log("Scatterplot Debug: SVG created");
 
-        // Initialize scales
+        // Initialize scales with placeholder domains (will be updated in render)
         vis.x = d3.scaleLinear()
             .range([0, vis.width]);
         vis.y = d3.scaleLinear()
             .range([vis.height, 0]);
-        
-        console.log("Scatterplot Debug: Scales initialized");
 
-        // Initialize axes with labels
+        // Initialize axes with larger font size
         vis.xAxis = d3.axisBottom(vis.x)
             .ticks(5)
-            .tickFormat(d => d);
+            .tickSize(10);
+
         vis.yAxis = d3.axisLeft(vis.y)
             .ticks(5)
-            .tickFormat(d => d);
-        
-        console.log("Scatterplot Debug: Axes initialized");
+            .tickSize(10);
 
-        // Add axes groups
+        // Add axes groups with updated styling
         vis.xAxisGroup = vis.svg.append("g")
             .attr("class", "x-axis")
-            .attr("transform", `translate(0,${vis.height})`);
+            .attr("transform", `translate(0,${vis.height})`)
+            .style("font-size", "14px");  // Increased from default (usually 12px)
         
         vis.yAxisGroup = vis.svg.append("g")
-            .attr("class", "y-axis");
-        
-        console.log("Scatterplot Debug: Axis groups created");
+            .attr("class", "y-axis")
+            .style("font-size", "14px");  // Increased from default (usually 12px)
 
-        // Add axis labels
+        // Add axis labels with updated font size
         vis.svg.append("text")
             .attr("class", "x-axis-label")
             .attr("x", vis.width / 2)
-            .attr("y", vis.height + 35)
+            .attr("y", vis.height + 45)  // Increased from 35 to 45 to move label lower
             .style("text-anchor", "middle")
+            .style("fill", "#4a4a4a")
+            .style("font-size", "18px")
             .text("X-Axis Label");
 
         vis.svg.append("text")
@@ -302,24 +433,40 @@ class Scatterplot {
             .attr("x", -vis.height / 2)
             .attr("y", -45)
             .style("text-anchor", "middle")
+            .style("fill", "#4a4a4a")
+            .style("font-size", "18px")  // Increased from default
             .text("Y-Axis Label");
-        
-        console.log("Scatterplot Debug: Axis labels added");
 
-        // Add title
+        // Add title with updated positioning
         vis.title = vis.svg.append("text")
             .attr("class", "plot-title")
             .attr("x", vis.width / 2)
-            .attr("y", -10)
-            .attr("text-anchor", "middle");
-        
-        console.log("Scatterplot Debug: Title element created:", {
-            titleElement: vis.title.node(),
-            exists: vis.title.node() !== null
-        });
-        
-        // Initial title update
-        this.updateTitle();
+            .attr("y", -50)  // Changed from -20 to -50 to increase spacing between title and plot
+            .attr("text-anchor", "middle")
+            .style("fill", "#4a4a4a")
+            .style("font-weight", "bold");
+
+        // Add CSS styles for axis elements
+        const styleSheet = document.createElement("style");
+        styleSheet.textContent = `
+            .x-axis path,
+            .y-axis path,
+            .x-axis line,
+            .y-axis line {
+                stroke: ${vis.plotColors.darkGrey};
+            }
+            
+            .x-axis text,
+            .y-axis text {
+                fill: ${vis.plotColors.darkGrey};
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        console.log("Scatterplot Debug: Plot initialized");
+
+        // Update circle radius
+        vis.circleRadius = 6;  // Increased from default size (likely 3 or 4)
     }
 
     initYearSlider() {
@@ -328,13 +475,6 @@ class Scatterplot {
 
         // Clear existing content
         vis.sliderContainer.selectAll("*").remove();
-
-        // Add year label
-        vis.sliderContainer.append("div")
-            .style("text-align", "center")
-            .style("margin-bottom", "10px")
-            .style("font-weight", "bold")
-            .text("Select Year");
 
         // Create slider
         vis.slider = vis.sliderContainer.append("input")
@@ -355,14 +495,15 @@ class Scatterplot {
         // Add year labels
         const labelContainer = vis.sliderContainer.append("div")
             .style("display", "flex")
-            .style("justify-content", "space-between")
-            .style("width", "100%")
-            .style("padding", "0 10px");
+            .style("justify-content", "space-between")  // Changed from space-between to space-around
+            .style("width", "100%")                     // Slightly reduced width to prevent labels from touching edges
+            .style("margin", "0 auto")                 // Center the container
+            .style("padding", "0 0px");
 
         // Add year markers
         d3.range(vis.yearRange.min, vis.yearRange.max + 1).forEach(year => {
             labelContainer.append("span")
-                .style("font-size", "12px")
+                .style("font-size", "14px") 
                 .style("color", "#666")
                 .text(year);
         });
@@ -374,88 +515,113 @@ class Scatterplot {
     }
 
     selectVariables(variables) {
-        console.log("Scatterplot Debug: Selecting variables:", variables);
+        const vis = this;
         const sorted = variables.sort((a, b) => a.priority - b.priority);
         this.selectedVariables = sorted;
-        console.log("Scatterplot Debug: Sorted variables:", this.selectedVariables);
         
-        // Update hexagon visualization
+        // Update hexagon selection
         this.updateHexagonSelection();
         
-        // Update title before rendering
-        this.updateTitle();
-        
-        // Render the updated visualization
+        // Render with transitions
         this.render();
     }
 
     updateHexagonSelection() {
         const vis = this;
         
-        // Reset all lines and circles
-        vis.hexagonSvg.selectAll(".variable-line")
+        // Reset all lines
+        vis.linesGroup.selectAll(".variable-line")
             .style("stroke", "#cccccc")
-            .style("stroke-width", 2)
+            .style("stroke-width", 5)
             .style("opacity", 0.5);
 
-        vis.hexagonSvg.selectAll(".variable-circle")
-            .style("stroke-width", 1);
+        // Reset all circles and text
+        vis.circlesGroup.selectAll(".variable-circle")
+            .style("fill", vis.colors.circleFillDefault)
+            .style("stroke", "none");
 
-        // Highlight selected line and circles
-        vis.hexagonSvg.selectAll(".variable-line")
+        vis.textGroup.selectAll(".variable-label")
+            .style("fill", vis.colors.textDefault);
+
+        // Highlight selected line and move to front within lines group
+        const selectedLine = vis.linesGroup.selectAll(".variable-line")
             .filter(d => 
                 (d.variables[0] === vis.selectedVariables[0] && d.variables[1] === vis.selectedVariables[1]) ||
                 (d.variables[0] === vis.selectedVariables[1] && d.variables[1] === vis.selectedVariables[0])
-            )
+            );
+        
+        selectedLine
             .style("stroke", "#3498db")
-            .style("stroke-width", 3)
-            .style("opacity", 1);
+            .style("stroke-width", 7)
+            .style("opacity", 1)
+            .each(function() {
+                // Move to front within the lines group only
+                this.parentNode.appendChild(this);
+            });
 
-        vis.hexagonSvg.selectAll(".variable-circle")
-            .filter((d, i) => 
-                vis.variables[i] === vis.selectedVariables[0] ||
-                vis.variables[i] === vis.selectedVariables[1]
-            )
-            .style("stroke-width", 3);
+        // Highlight selected circles and their text
+        const selectedIndices = vis.variables.map((v, i) => 
+            (v === vis.selectedVariables[0] || v === vis.selectedVariables[1]) ? i : -1
+        ).filter(i => i !== -1);
+
+        // Update selected circles
+        vis.circlesGroup.selectAll(".variable-circle")
+            .filter((d, i) => selectedIndices.includes(i))
+            .style("fill", vis.colors.circleFillHighlight)
+            .style("stroke", "none");
+
+        // Update text color for selected circles
+        vis.textGroup.selectAll(".variable-text-group")
+            .each(function(d, i) {
+                if (selectedIndices.includes(i)) {
+                    d3.select(this).selectAll(".variable-label")
+                        .style("fill", vis.colors.textHighlight);
+                }
+            });
     }
 
     updateTitle() {
         const vis = this;
-        console.log("Scatterplot Debug: UpdateTitle called:", {
-            titleElement: vis.title?.node(),
-            selectedVariables: vis.selectedVariables,
-            selectedYear: vis.selectedYear
-        });
-
-        if (!vis.title) {
-            console.error("Scatterplot Debug: Title element missing");
-            return;
-        }
-
-        const titleText = `${vis.selectedVariables[1]?.label} vs ${vis.selectedVariables[0]?.label} (${vis.selectedYear})`;
-        vis.title.text(titleText);
-        
-        console.log("Scatterplot Debug: Title updated to:", {
-            text: titleText,
-            element: vis.title.node(),
-            content: vis.title.text()
-        });
+        vis.title
+            .transition()
+            .duration(1000)
+            .text(`${vis.selectedVariables[1].label} vs. ${vis.selectedVariables[0].label} (${vis.selectedYear})`);
     }
 
-    renderTransition() {
+    render() {
         const vis = this;
+        console.log("Scatterplot Debug: Starting render");
+
+        // Calculate domains for both axes
+        const xDomain = vis.calculateAxisDomain(vis.selectedVariables[1].name);
+        const yDomain = vis.calculateAxisDomain(vis.selectedVariables[0].name);
+
+        // Update scales with new domains
+        vis.x.domain(xDomain);
+        vis.y.domain(yDomain);
         
+        // Update axes with transition
+        vis.xAxisGroup
+            .transition()
+            .duration(1000)
+            .call(vis.xAxis);
+        
+        vis.yAxisGroup
+            .transition()
+            .duration(1000)
+            .call(vis.yAxis);
+
         // Filter data for selected year
         const yearData = vis.data.filter(d => d.year === vis.selectedYear);
-        
-        // Update points with transition
-        const points = vis.g.selectAll(".point")
+
+        // Update points with transitions
+        const points = vis.svg.selectAll(".point")
             .data(yearData);
-            
+        
         // Exit
         points.exit()
             .transition()
-            .duration(750)
+            .duration(1000)
             .attr("r", 0)
             .remove();
         
@@ -463,119 +629,44 @@ class Scatterplot {
         const pointsEnter = points.enter()
             .append("circle")
             .attr("class", "point")
-            .attr("r", 0)
+            .attr("r", vis.circleRadius)
             .attr("fill", "#3498db")
             .attr("opacity", 0.6);
-            
+        
         // Update + Enter
         points.merge(pointsEnter)
             .transition()
-            .duration(750)
-            .attr("cx", d => vis.x(d[vis.currentX]))
-            .attr("cy", d => vis.y(d[vis.currentY]))
-            .attr("r", 5);
-    }
+            .duration(1000)
+            .attr("cx", d => vis.x(d[vis.selectedVariables[1].name]))
+            .attr("cy", d => vis.y(d[vis.selectedVariables[0].name]))
+            .attr("r", vis.circleRadius);
 
-    updateAxisLabels() {
-        const vis = this;
-        console.log("Scatterplot Debug: Updating axis labels with:", {
-            x: vis.selectedVariables[1]?.label,
-            y: vis.selectedVariables[0]?.label
-        });
-
+        // Update axis labels with transition
         vis.svg.select(".x-axis-label")
-            .text(vis.selectedVariables[1]?.label);
+            .transition()
+            .duration(1000)
+            .text(vis.selectedVariables[1].label);
         
         vis.svg.select(".y-axis-label")
-            .text(vis.selectedVariables[0]?.label);
+            .transition()
+            .duration(1000)
+            .text(vis.selectedVariables[0].label);
+
+        // Update title
+        vis.updateTitle();
     }
 
-    render() {
+    // Add method to calculate axis domain
+    calculateAxisDomain(metric) {
         const vis = this;
-        console.log("Scatterplot Debug: Render start:", {
-            selectedYear: vis.selectedYear,
-            selectedVariables: vis.selectedVariables?.map(v => v.label)
-        });
-
-        // Filter data for selected year
-        const yearData = vis.data.filter(d => d.year === vis.selectedYear);
-        console.log("Scatterplot Debug: Filtered data:", {
-            year: vis.selectedYear,
-            dataPoints: yearData.length,
-            samplePoint: yearData[0],
-            variables: {
-                x: vis.selectedVariables[1]?.name,
-                y: vis.selectedVariables[0]?.name
-            }
-        });
-
-        // Update scales
-        vis.x.domain([0, 100]);
-        vis.y.domain([0, 100]);
         
-        console.log("Scatterplot Debug: Updated scale domains");
-
-        // Update axes
-        try {
-            vis.xAxisGroup.call(vis.xAxis);
-            vis.yAxisGroup.call(vis.yAxis);
-            console.log("Scatterplot Debug: Axes updated successfully");
-        } catch (error) {
-            console.error("Scatterplot Debug: Error updating axes:", error);
-        }
-
-        // Update axis labels
-        vis.updateAxisLabels();
-
-        // Update points with detailed debugging
-        try {
-            const points = vis.svg.selectAll(".point")
-                .data(yearData);
-            
-            console.log("Scatterplot Debug: Points update:", {
-                totalPoints: yearData.length,
-                enter: points.enter().size(),
-                exit: points.exit().size(),
-                update: points.size()
-            });
-
-            // Enter + Update points
-            points.enter()
-                .append("circle")
-                .attr("class", "point")
-                .merge(points)
-                .attr("cx", d => {
-                    const x = vis.x(d[vis.selectedVariables[1].name]);
-                    if (isNaN(x)) {
-                        console.error("Scatterplot Debug: Invalid x value:", {
-                            raw: d[vis.selectedVariables[1].name],
-                            scaled: x,
-                            point: d
-                        });
-                    }
-                    return x;
-                })
-                .attr("cy", d => {
-                    const y = vis.y(d[vis.selectedVariables[0].name]);
-                    if (isNaN(y)) {
-                        console.error("Scatterplot Debug: Invalid y value:", {
-                            raw: d[vis.selectedVariables[0].name],
-                            scaled: y,
-                            point: d
-                        });
-                    }
-                    return y;
-                })
-                .attr("r", 5)
-                .attr("fill", "#3498db")
-                .attr("opacity", 0.6);
-
-            points.exit().remove();
-            
-            console.log("Scatterplot Debug: Points updated successfully");
-        } catch (error) {
-            console.error("Scatterplot Debug: Error updating points:", error);
-        }
+        // Get minimum value for this metric across all years
+        const minValue = d3.min(vis.data, d => d[metric]);
+        
+        // Find largest multiple of 10 less than minValue
+        const minDomain = Math.floor(minValue / 10) * 10;
+        
+        return [minDomain, 100];
     }
 }
 
@@ -619,6 +710,22 @@ const styles = `
     /* Hide any existing year filter dropdowns */
     select[id*="year"] {
         display: none !important;
+    }
+
+    .point {
+        transition: fill 0.3s ease;
+    }
+    
+    .x-axis path,
+    .y-axis path,
+    .x-axis line,
+    .y-axis line {
+        transition: all 0.3s ease;
+    }
+    
+    .x-axis text,
+    .y-axis text {
+        transition: all 0.3s ease;
     }
 `;
 
